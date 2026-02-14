@@ -12,6 +12,10 @@ extern struct ATStruct AT[];
 #define VM_USERLO_PI (VM_USERLO / PAGESIZE)
 #define VM_USERHI_PI (VM_USERHI / PAGESIZE)
 
+#define SUPERPAGE_ORDER 10
+
+// #define SUPERPAGE_ORDER 9
+
 int MATOp_test1()
 {
     int page_index = palloc();
@@ -64,5 +68,64 @@ int MATOp_test_own()
 
 int test_MATOp()
 {
-    return MATOp_test1() + MATOp_test_own();
+    return MATOp_test1() 
+         + MATOp_test_own()
+         + MATOp_test_superpage();
+}
+
+
+//superpage allocation test
+
+int MATOp_test_superpage()
+{
+    dprintf("Testing superpage allocation (Order 10)...\n");
+
+    int pindex = palloc_superpage();
+
+    if (pindex == 0) {
+        dprintf("Superpage allocation failed.\n");
+        return 1;
+    }
+
+    // Check range
+    if (pindex < VM_USERLO_PI || VM_USERHI_PI <= pindex) {
+        dprintf("Superpage test failed: invalid range.\n");
+        return 1;
+    }
+
+    //Check alignment (must be 1024-page aligned)
+    unsigned int pages = 1U << SUPERPAGE_ORDER;
+    if ((pindex & (pages - 1)) != 0) {
+        dprintf("Superpage test failed: not properly aligned.\n");
+        return 1;
+    }
+
+    //Check order metadata
+    if (AT[pindex].order != SUPERPAGE_ORDER) {
+        dprintf("Superpage test failed: wrong order. Expected %d, got %d\n",
+                SUPERPAGE_ORDER, AT[pindex].order);
+        return 1;
+    }
+
+    //Check all 1024 pages allocated
+    for (unsigned int i = 0; i < pages; i++) {
+        if (at_is_allocated(pindex + i) != 1) {
+            dprintf("Superpage test failed: page %u not allocated.\n", i);
+            return 1;
+        }
+    }
+
+    // Free
+    pfree_superpage(pindex);
+
+    //Check pages freed
+    for (unsigned int i = 0; i < pages; i++) {
+        if (at_is_allocated(pindex + i) != 0) {
+            dprintf("Superpage test failed: page %u not freed.\n", i);
+            return 1;
+        }
+    }
+
+    dprintf("Superpage test passed.\n");
+    return 0;
 }
