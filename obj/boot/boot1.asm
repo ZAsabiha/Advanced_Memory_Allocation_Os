@@ -5792,24 +5792,22 @@ Disassembly of section .debug_str:
   1a:	63 65 72             	arpl   %esp,0x72(%ebp)
   1d:	74 69                	je     88 <PR_BOOTABLE+0x8>
   1f:	6b 6f 73 2f          	imul   $0x2f,0x73(%edi),%ebp
-  23:	44                   	inc    %esp
-  24:	65 73 6b             	gs jae 92 <PR_BOOTABLE+0x12>
-  27:	74 6f                	je     98 <PR_BOOTABLE+0x18>
-  29:	70 2f                	jo     5a <PROT_MODE_DSEG+0x4a>
-  2b:	4f                   	dec    %edi
-  2c:	53                   	push   %ebx
-  2d:	5f                   	pop    %edi
-  2e:	4c                   	dec    %esp
-  2f:	61                   	popa
-  30:	62 2f                	bound  %ebp,(%edi)
-  32:	6c                   	insb   (%dx),%es:(%edi)
-  33:	61                   	popa
-  34:	62 32                	bound  %esi,(%edx)
-  36:	2f                   	das
-  37:	6d                   	insl   (%dx),%es:(%edi)
-  38:	63 65 72             	arpl   %esp,0x72(%ebp)
-  3b:	74 69                	je     a6 <PR_BOOTABLE+0x26>
-  3d:	6b 6f 73 00          	imul   $0x0,0x73(%edi),%ebp
+  23:	41                   	inc    %ecx
+  24:	64 76 61             	fs jbe 88 <PR_BOOTABLE+0x8>
+  27:	6e                   	outsb  %ds:(%esi),(%dx)
+  28:	63 65 64             	arpl   %esp,0x64(%ebp)
+  2b:	5f                   	pop    %edi
+  2c:	4d                   	dec    %ebp
+  2d:	65 6d                	gs insl (%dx),%es:(%edi)
+  2f:	6f                   	outsl  %ds:(%esi),(%dx)
+  30:	72 79                	jb     ab <PR_BOOTABLE+0x2b>
+  32:	5f                   	pop    %edi
+  33:	41                   	inc    %ecx
+  34:	6c                   	insb   (%dx),%es:(%edi)
+  35:	6c                   	insb   (%dx),%es:(%edi)
+  36:	6f                   	outsl  %ds:(%esi),(%dx)
+  37:	63 61 74             	arpl   %esp,0x74(%ecx)
+  3a:	69 6f 6e 5f 4f 73 00 	imul   $0x734f5f,0x6e(%edi),%ebp
   41:	47                   	inc    %edi
   42:	4e                   	dec    %esi
   43:	55                   	push   %ebp
@@ -6313,24 +6311,22 @@ Disassembly of section .debug_line_str:
    7:	63 65 72             	arpl   %esp,0x72(%ebp)
    a:	74 69                	je     75 <PROT_MODE_DSEG+0x65>
    c:	6b 6f 73 2f          	imul   $0x2f,0x73(%edi),%ebp
-  10:	44                   	inc    %esp
-  11:	65 73 6b             	gs jae 7f <PROT_MODE_DSEG+0x6f>
-  14:	74 6f                	je     85 <PR_BOOTABLE+0x5>
-  16:	70 2f                	jo     47 <PROT_MODE_DSEG+0x37>
-  18:	4f                   	dec    %edi
-  19:	53                   	push   %ebx
-  1a:	5f                   	pop    %edi
-  1b:	4c                   	dec    %esp
-  1c:	61                   	popa
-  1d:	62 2f                	bound  %ebp,(%edi)
-  1f:	6c                   	insb   (%dx),%es:(%edi)
-  20:	61                   	popa
-  21:	62 32                	bound  %esi,(%edx)
-  23:	2f                   	das
-  24:	6d                   	insl   (%dx),%es:(%edi)
-  25:	63 65 72             	arpl   %esp,0x72(%ebp)
-  28:	74 69                	je     93 <PR_BOOTABLE+0x13>
-  2a:	6b 6f 73 00          	imul   $0x0,0x73(%edi),%ebp
+  10:	41                   	inc    %ecx
+  11:	64 76 61             	fs jbe 75 <PROT_MODE_DSEG+0x65>
+  14:	6e                   	outsb  %ds:(%esi),(%dx)
+  15:	63 65 64             	arpl   %esp,0x64(%ebp)
+  18:	5f                   	pop    %edi
+  19:	4d                   	dec    %ebp
+  1a:	65 6d                	gs insl (%dx),%es:(%edi)
+  1c:	6f                   	outsl  %ds:(%esi),(%dx)
+  1d:	72 79                	jb     98 <PR_BOOTABLE+0x18>
+  1f:	5f                   	pop    %edi
+  20:	41                   	inc    %ecx
+  21:	6c                   	insb   (%dx),%es:(%edi)
+  22:	6c                   	insb   (%dx),%es:(%edi)
+  23:	6f                   	outsl  %ds:(%esi),(%dx)
+  24:	63 61 74             	arpl   %esp,0x74(%ecx)
+  27:	69 6f 6e 5f 4f 73 00 	imul   $0x734f5f,0x6e(%edi),%ebp
   2e:	62 6f 6f             	bound  %ebp,0x6f(%edi)
   31:	74 2f                	je     62 <PROT_MODE_DSEG+0x52>
   33:	62 6f 6f             	bound  %ebp,0x6f(%edi)
