@@ -2,6 +2,10 @@
 #include <lib/x86.h>
 #include "import.h"
 
+// Superpage constants
+#define SUPERPAGE_ORDER 10
+#define PAGES_PER_SUPERPAGE 1024
+
 struct SContainer {
     int quota;
     int usage;
@@ -14,7 +18,7 @@ static struct SContainer CONTAINER[NUM_IDS];
 
 void container_init(unsigned int mbi_addr)
 {
-    (void)mbi_addr; // not needed if pmem_init is done elsewhere
+    (void)mbi_addr; 
 
     unsigned int real_quota = 0;
     unsigned int nps = get_nps();
@@ -84,10 +88,43 @@ unsigned int container_alloc(unsigned int id)
     return 0;
 }
 
+/**
+ * NEW: Container-aware Superpage Allocation
+ * Checks if 1024 pages are available in the quota before 
+ * calling the buddy allocator's superpage function.
+ */
+unsigned int container_alloc_superpage(unsigned int id)
+{
+    if (container_can_consume(id, PAGES_PER_SUPERPAGE)) {
+        // Calls the Order 10 allocator you implemented in MATOp
+        unsigned int pindex = palloc_superpage();
+        if (pindex != 0) {
+            CONTAINER[id].usage += PAGES_PER_SUPERPAGE;
+            dprintf("Container: Process %d allocated superpage at PI %u\n", id, pindex);
+            return pindex;
+        }
+    }
+    return 0;
+}
+
+/**
+ * UPDATED: Container Free
+ * Now checks the Allocation Table (AT) to see if the page being freed 
+ * is a 4KB page or the start of a 4MB superpage to adjust usage correctly.
+ */
 void container_free(unsigned int id, unsigned int page_index)
 {
-    pfree(page_index);
-    if (CONTAINER[id].usage > 0) {
-        CONTAINER[id].usage--;
+    // Check the order of the page in the Allocation Table metadata
+    // This assumes your AT structure has an 'order' field from the buddy system
+    unsigned int order = at_get_order(page_index);
+    
+    if (order == SUPERPAGE_ORDER) {
+        pfree_superpage(page_index);
+        CONTAINER[id].usage -= PAGES_PER_SUPERPAGE;
+    } else {
+        pfree(page_index);
+        if (CONTAINER[id].usage > 0) {
+            CONTAINER[id].usage--;
+        }
     }
 }
