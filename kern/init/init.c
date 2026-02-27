@@ -1,115 +1,20 @@
-// #include <lib/debug.h>
-// #include <lib/types.h>
-// #include <lib/monitor.h>
-// #include <vmm/MPTInit/export.h>
-// #include <vmm/MPTKern/export.h>
-
-// #define NUM_CHAN     64
-// #define TD_STATE_RUN 1
-
-// #ifdef TEST
-// // Your MATIntro test declaration
-// extern int test_MATIntro(void); 
-// extern int test_MATInit(void); // ADD THIS LINE
-
-// extern bool test_MContainer(void);
-// extern bool test_MPTIntro(void);
-// extern bool test_MPTOp(void);
-// extern bool test_MPTComm(void);
-// extern bool test_MPTKern(void);
-// extern bool test_MPTNew(void);
-// #endif
-
-// static void kern_main(void)
-// {
-//     KERN_DEBUG("In kernel main.\n\n");
-
-// #ifdef TEST
-//     // --- START OF YOUR TEST ---
-//     dprintf("Testing the MATIntro layer...\n");
-//     if (test_MATIntro() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-
-//     // ADD THESE LINES FOR MATINIT
-//     dprintf("Testing the MATInit layer...\n");
-//     if (test_MATInit() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-//     // --- END OF YOUR TEST ---
-
-//     dprintf("Testing the MContainer layer...\n");
-//     if (test_MContainer() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-
-//     dprintf("Testing the MPTIntro layer...\n");
-//     if (test_MPTIntro() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-
-//     dprintf("Testing the MPTOp layer...\n");
-//     if (test_MPTOp() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-
-//     dprintf("Testing the MPTComm layer...\n");
-//     if (test_MPTComm() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-
-//     dprintf("Testing the MPTKern layer...\n");
-//     if (test_MPTKern() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\n");
-
-//     dprintf("Testing the MPTNew layer...\n");
-//     if (test_MPTNew() == 0)
-//         dprintf("All tests passed.\n");
-//     else
-//         dprintf("Test failed.\n");
-//     dprintf("\nTest complete. Please Use Ctrl-a x to exit qemu.");
-// #else
-//     monitor(NULL);
-// #endif
-// }
-
-// void kern_init(uintptr_t mbi_addr)
-// {
-// #ifdef TEST
-//     pdir_init_kern(mbi_addr);
-// #else
-//     paging_init(mbi_addr);
-// #endif
-
-//     KERN_DEBUG("Kernel initialized.\n");
-
-//     kern_main();
-//}
-
 #include <lib/debug.h>
 #include <lib/types.h>
 #include <lib/monitor.h>
+#include <lib/trap.h>
+#include <lib/x86.h>
+
+/* VMM Layer Exports */
+#include <vmm/MPTInit/export.h>
+#include <vmm/MPTNew/export.h>
 
 #ifdef TEST
 extern int  test_MATIntro(void);
 extern int  test_MATInit(void);
 extern int  test_MATOp(void);
+extern int  MATOp_test_superpage_advanced(void); 
 extern bool test_MContainer(void);
+extern int  test_MPTComm(void); 
 #endif
 
 extern void pmem_init(unsigned int mbi_addr);
@@ -120,48 +25,33 @@ static void kern_main(uintptr_t mbi_addr)
     KERN_DEBUG("In kernel main.\n\n");
 
 #ifdef TEST
-    // 1) MATIntro
-    dprintf("Testing the MATIntro layer...\n");
-    if (test_MATIntro() == 0)
-        dprintf("All tests passed.\n");
-    else
-        dprintf("Test failed.\n");
-    dprintf("\n");
-
-    // Re-initialize PMM to ensure clean state for later layers
+    /* 1. Physical Memory Tests */
     pmem_init((unsigned int)mbi_addr);
-
-    // 2) MATInit
-    dprintf("Testing the MATInit layer...\n");
-    if (test_MATInit() == 0)
-        dprintf("All tests passed.\n");
-    else
-        dprintf("Test failed.\n");
-    dprintf("\n");
-
-    // 3) MATOp
-    dprintf("Testing the MATOp layer...\n");
-    if (test_MATOp() == 0)
-        dprintf("All tests passed.\n");
-    else
-        dprintf("Test failed.\n");
-    dprintf("\n");
-
-    // IMPORTANT: initialize container system before container tests
+    test_MATInit();
+    test_MATOp();
+    
+    /* 2. Container Tests */
     container_init((unsigned int)mbi_addr);
+    test_MContainer();
 
-    // 4) MContainer
-    dprintf("Testing the MContainer layer...\n");
-    if (test_MContainer() == 0)
-        dprintf("All tests passed.\n");
-    else
-        dprintf("Test failed.\n");
-    dprintf("\n");
+    /* 3. Virtual Memory & Superpage Tests (FIX STARTS HERE) */
+    // You MUST call paging_init to enable the 4MB PSE hardware bit
+    paging_init(mbi_addr); 
 
-    dprintf("\nTest complete. Please Use Ctrl-a x to exit qemu.");
+    dprintf("Testing the MPTComm layer (Superpage & Heap foundation)...\n");
+    // This will now execute MPTComm_test_own
+    if (test_MPTComm() == 0) {
+        dprintf("MPTComm tests passed!\n");
+    }
+
+    // THIS MUST BE THE VERY LAST LINE OF THE TEST BLOCK
+    dprintf("\nTest complete. Please Use Ctrl-a x to exit qemu.\n");
 #else
+    paging_init(mbi_addr);
     monitor(NULL);
 #endif
+
+    monitor(NULL);
 }
 
 void kern_init(uintptr_t mbi_addr)
