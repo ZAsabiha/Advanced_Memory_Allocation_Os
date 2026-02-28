@@ -24,6 +24,13 @@ unsigned int get_nps(void) {
     return NUM_PAGES;
 }
 
+// Getter function for the buddy order of a page.
+unsigned int at_get_order(unsigned int page_index) {
+    if (page_index < NUM_PAGES) {
+        return AT[page_index].order;
+    }
+    return 0; // Default to order 0 (4KB) if out of bounds
+}
 // Setter function for NUM_PAGES.
 void set_nps(unsigned int nps) {
     NUM_PAGES = nps;

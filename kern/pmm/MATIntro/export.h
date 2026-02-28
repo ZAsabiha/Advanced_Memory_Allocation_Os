@@ -17,6 +17,7 @@ extern struct ATStruct AT[1 << 20];
 
 /* 3. Function prototypes */
 unsigned int get_nps(void);
+unsigned int at_get_order(unsigned int page_index);
 void set_nps(unsigned int nps);
 unsigned int at_is_norm(unsigned int page_index);
 void at_set_perm(unsigned int page_index, unsigned int perm);

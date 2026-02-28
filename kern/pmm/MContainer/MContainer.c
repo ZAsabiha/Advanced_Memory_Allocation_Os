@@ -95,14 +95,21 @@ unsigned int container_alloc(unsigned int id)
  */
 unsigned int container_alloc_superpage(unsigned int id)
 {
+    // DEBUG: See what's happening
+    dprintf("MContainer: ID %d usage=%d, quota=%d. Requesting 1024.\n", 
+            id, CONTAINER[id].usage, CONTAINER[id].quota);
+
     if (container_can_consume(id, PAGES_PER_SUPERPAGE)) {
-        // Calls the Order 10 allocator you implemented in MATOp
-        unsigned int pindex = palloc_superpage();
+        unsigned int pindex = palloc_superpage(); 
         if (pindex != 0) {
             CONTAINER[id].usage += PAGES_PER_SUPERPAGE;
-            dprintf("Container: Process %d allocated superpage at PI %u\n", id, pindex);
             return pindex;
+        } else {
+            // This means the Quota was fine, but the Buddy System failed!
+            dprintf("MContainer Error: Buddy System (palloc_superpage) returned 0!\n");
         }
+    } else {
+        dprintf("MContainer Error: Quota exceeded for ID %d!\n", id);
     }
     return 0;
 }

@@ -2,6 +2,7 @@
 #define _KERN_VMM_MPTCOMM_H_
 
 #ifdef _KERN_
+unsigned int container_alloc_superpage(unsigned int id);
 
 unsigned int container_alloc(unsigned int id);
 void container_free(unsigned int id, unsigned int page_index);

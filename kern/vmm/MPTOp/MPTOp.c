@@ -9,6 +9,24 @@
 #define PT_PERM_PW (PTE_P | PTE_W)
 #define PTE_PS 0x80 //
 
+/**
+ * Raw Page Directory Entry Setter
+ * This allows us to set the PS (0x80) bit for 4MB superpages.
+ */
+void set_pde(unsigned int proc_index, unsigned int pde_index, unsigned int entry)
+{
+    // Access the global Page Directory Pool
+    // In most CertiKOS labs, this is PDirPool[proc_index][pde_index]
+    PDirPool[proc_index][pde_index] = entry;
+}
+// Add this to kern/vmm/MPTOp/MPTOp.c
+void set_pde_full_by_va(unsigned int proc_index, unsigned int vaddr, unsigned int entry)
+{
+    unsigned int pde_index = (vaddr & VA_PDIR_MASK) >> 22;
+    // Call the lower level set_pde or set_pdir_entry 
+    // but ensure it passes the WHOLE entry
+    set_pde(proc_index, pde_index, entry); 
+}
 unsigned int get_ptbl_entry_by_va(unsigned int proc_index, unsigned int vaddr)
 {
     unsigned int pde_index = (vaddr & VA_PDIR_MASK) >> 22;
@@ -80,3 +98,4 @@ void idptbl_init(unsigned int mbi_adr)
         }
     }
 }
+

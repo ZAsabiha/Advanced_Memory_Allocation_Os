@@ -13,6 +13,9 @@ unsigned int container_split(unsigned int id, unsigned int quota);
 unsigned int container_alloc(unsigned int id);
 void container_free(unsigned int id, unsigned int page_index);
 
+
+#define NUM_IDS 1024
+#define MAX_CHILDREN 8
 #endif  /* _KERN_ */
 
 #endif  /* !_KERN_PMM_MCONTAINER_H_ */

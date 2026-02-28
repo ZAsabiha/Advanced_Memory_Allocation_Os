@@ -2,7 +2,9 @@
 #include <pmm/MContainer/export.h>
 #include <vmm/MPTOp/export.h>
 #include "export.h"
-
+#include <lib/x86.h>
+#include <vmm/MPTNew/export.h> 
+#include <pmm/MContainer/export.h>
 int MPTComm_test1()
 {
     unsigned int i;
@@ -25,19 +27,21 @@ int MPTComm_test1()
 int MPTComm_test2()
 {
     unsigned int vaddr = 300 * 4096 * 1024;
-    container_split(0, 100);
-    alloc_ptbl(1, vaddr);
-    if (get_pdir_entry_by_va(1, vaddr) == 0) {
-        dprintf("test 2.1 failed: (%d == 0)\n", get_pdir_entry_by_va(1, vaddr));
+    // We split container 0, which creates ID 1 with a small quota
+    unsigned int chid = container_split(0, 100); 
+    
+    alloc_ptbl(chid, vaddr);
+    if (get_pdir_entry_by_va(chid, vaddr) == 0) {
+        dprintf("test 2.1 failed: (%d == 0)\n", get_pdir_entry_by_va(chid, vaddr));
         return 1;
     }
-    if (get_ptbl_entry_by_va(1, vaddr) != 0) {
-        dprintf("test 2.2 failed: (%d != 0)\n", get_ptbl_entry_by_va(1, vaddr));
+    if (get_ptbl_entry_by_va(chid, vaddr) != 0) {
+        dprintf("test 2.2 failed: (%d != 0)\n", get_ptbl_entry_by_va(chid, vaddr));
         return 1;
     }
-    free_ptbl(1, vaddr);
-    if (get_pdir_entry_by_va(1, vaddr) != 0) {
-        dprintf("test 2.3 failed: (%d != 0)\n", get_pdir_entry_by_va(1, vaddr));
+    free_ptbl(chid, vaddr);
+    if (get_pdir_entry_by_va(chid, vaddr) != 0) {
+        dprintf("test 2.3 failed: (%d != 0)\n", get_pdir_entry_by_va(chid, vaddr));
         return 1;
     }
     dprintf("test 2 passed.\n");
@@ -45,22 +49,56 @@ int MPTComm_test2()
 }
 
 /**
- * Write Your Own Test Script (optional)
- *
- * Come up with your own interesting test cases to challenge your classmates!
- * In addition to the provided simple tests, selected (correct and interesting) test functions
- * will be used in the actual grading of the lab!
- * Your test function itself will not be graded. So don't be afraid of submitting a wrong script.
- *
- * The test function should return 0 for passing the test and a non-zero code for failing the test.
- * Be extra careful to make sure that if you overwrite some of the kernel data, they are set back to
- * the original value. O.w., it may make the future test scripts to fail even if you implement all
- * the functions correctly.
+ * Superpage & Quota Integration Test
+ * Corrected to use the dynamic ID from container_split.
  */
 int MPTComm_test_own()
 {
-    // TODO (optional)
-    // dprintf("own test passed.\n");
+    unsigned int vaddr = 0x40000000; 
+    unsigned int quota = 2048;       // Enough for superpages
+    
+    dprintf("Starting Superpage & Quota Integration Test...\n");
+
+    // FIX: Instead of hardcoding proc_id = 1, we use the ID returned here.
+    // If test2 already ran, this will likely be ID 2.
+    unsigned int proc_id = container_split(0, quota);
+    
+    if (proc_id == 0 || proc_id >= NUM_IDS) {
+        dprintf("Superpage Test Failed: Invalid proc_id returned from split.\n");
+        return 1;
+    }
+
+    // 2. Test Superpage Allocation
+    unsigned int pindex = alloc_superpage(proc_id, vaddr);
+    if (pindex == 0) {
+        dprintf("Superpage Test Failed: Could not allocate 4MB block for ID %u.\n", proc_id);
+        return 1;
+    }
+
+    // 3. Verify Hardware Bit (PS) in the Page Directory
+    unsigned int pde = get_pdir_entry_by_va(proc_id, vaddr);
+    if (!(pde & 0x80)) { 
+        dprintf("Superpage Test Failed: PS bit not set in PDE (0x%x).\n", pde);
+        return 1;
+    }
+    dprintf("Verified: PDE for ID %u at 0x%08x has PS bit set.\n", proc_id, vaddr);
+
+    // 4. Verify Quota Usage (1 Superpage = 1024 pages)
+    if (container_get_usage(proc_id) != 1024) {
+        dprintf("Superpage Test Failed: Usage (%d) != 1024.\n", container_get_usage(proc_id));
+        return 1;
+    }
+
+    // 5. Test Superpage Freeing
+    free_ptbl(proc_id, vaddr);
+    
+    // 6. Verify Quota Recovery
+    if (container_get_usage(proc_id) != 0) {
+        dprintf("Superpage Test Failed: Usage after free (%d) != 0.\n", container_get_usage(proc_id));
+        return 1;
+    }
+
+    dprintf("Superpage & Quota Integration Test passed!\n");
     return 0;
 }
 
