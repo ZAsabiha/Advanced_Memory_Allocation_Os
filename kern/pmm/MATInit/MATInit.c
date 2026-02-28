@@ -2,31 +2,34 @@
 #include <pmm/MATIntro/export.h>
 #include "import.h"
 
-#define MAX_ORDER 11
-
 #define PAGESIZE      4096
 #define VM_USERLO     0x40000000
 #define VM_USERHI     0xF0000000
 #define VM_USERLO_PI  (VM_USERLO / PAGESIZE)
 #define VM_USERHI_PI  (VM_USERHI / PAGESIZE)
 
+#define HUGE_SIZE  (1U << HUGE_ORDER)
+
 static int is_block_free_normal(unsigned int base, unsigned int order)
 {
-    unsigned int n = 1U << order;
+    unsigned int number_of_pages = 1U << order;
     unsigned int i;
 
-    // Must stay inside user window
-    if (base < VM_USERLO_PI) return 0;
-    if (base + n > VM_USERHI_PI) return 0;
+    if (base < VM_USERLO_PI)
+        return 0;
 
-    // Check all pages in the block are Normal RAM and not allocated
-    for (i = 0; i < n; i++) {
+    if (base + number_of_pages > VM_USERHI_PI)
+        return 0;
+
+    for (i = 0; i < number_of_pages; i++) {
         unsigned int pi = base + i;
-        if (AT[pi].perm != 2) return 0;
-        if (AT[pi].allocated != 0) return 0;
+        if (AT[pi].perm != 2 || AT[pi].allocated != 0)
+            return 0;
     }
+
     return 1;
 }
+
 
 void pmem_init(unsigned int mbi_addr)
 {
@@ -36,19 +39,19 @@ void pmem_init(unsigned int mbi_addr)
     devinit(mbi_addr);
     unsigned int n_entries = get_size();
 
-    // Find end of physical RAM
+    // Determine highest usable physical memory
     for (i = 0; i < n_entries; i++) {
         unsigned int end = get_mms(i) + get_mml(i);
-        if (end > highest_addr) highest_addr = end;
+        if (end > highest_addr)
+            highest_addr = end;
     }
+
     unsigned int phys_nps = highest_addr / PAGESIZE;
 
-    // AT must cover the PI window used by tests
     set_nps(VM_USERHI_PI);
-
     pmm_init_freelists();
 
-    // PHASE 1: reset whole AT
+    // Clear all pages
     for (i = 0; i < get_nps(); i++) {
         at_set_allocated(i, 0);
         at_set_perm(i, 0);
@@ -57,12 +60,11 @@ void pmem_init(unsigned int mbi_addr)
         AT[i].order = 0;
     }
 
-    // Mark below-user window as kernel/reserved (not allocatable)
-    for (i = 0; i < VM_USERLO_PI; i++) {
+    // Reserved low memory
+    for (i = 0; i < VM_USERLO_PI; i++)
         at_set_perm(i, 1);
-    }
 
-    // PHASE 2a: mark user-window pages as Normal/Reserved via BIOS (shifted mapping)
+    // Mark usable RAM pages
     for (i = VM_USERLO_PI; i < VM_USERHI_PI; i++) {
         unsigned int phys_pi = i - VM_USERLO_PI;
 
@@ -75,6 +77,7 @@ void pmem_init(unsigned int mbi_addr)
         unsigned int paddr_end   = paddr_start + PAGESIZE;
 
         int is_ram = 0;
+
         for (j = 0; j < n_entries; j++) {
             if (!is_usable(j)) continue;
 
@@ -88,51 +91,81 @@ void pmem_init(unsigned int mbi_addr)
         }
 
         if (is_ram) {
-            at_set_perm(i, 2);   // Normal RAM
+            at_set_perm(i, 2);
             at_set_allocated(i, 0);
         } else {
-            at_set_perm(i, 0);   // Reserved hole
+            at_set_perm(i, 0);
         }
     }
 
-    /*
-     * PHASE 2b: build buddy blocks (populate free lists for all orders)
-     *
-     * Greedy: at each position, take the largest block you can.
-     */
-    i = VM_USERLO_PI;
-    while (i < VM_USERHI_PI) {
+    unsigned int split = VM_USERLO_PI + (VM_USERHI_PI - VM_USERLO_PI) / 4;
 
-        // skip non-normal pages
-        if (AT[i].perm != 2 || AT[i].allocated != 0) {
+    // ============================
+    // SEGMENT A: Huge blocks only
+    // ============================
+    i = VM_USERLO_PI;
+    while (i + HUGE_SIZE <= split) {
+        if (AT[i].perm != 2 || AT[i].allocated != 0) { i++; continue; }
+        if ((i & (HUGE_SIZE - 1)) != 0) { i++; continue; }
+        if (is_block_free_normal(i, HUGE_ORDER)) {
+            AT[i].order = HUGE_ORDER;
+            at_list_add(HUGE_ORDER, i);
+            i += HUGE_SIZE;
+        } else {
             i++;
-            continue;
         }
+    }
+
+    // ============================
+    // SEGMENT B: Normal + Huge blocks
+    // ============================
+    i = split;
+    while (i < VM_USERHI_PI) {
+        if (AT[i].perm != 2 || AT[i].allocated != 0) { i++; continue; }
 
         int order;
-        // find largest order that fits, aligned, and all pages normal/free
-        for (order = MAX_ORDER - 1; order >= 0; order--) {
+        for (order = HUGE_ORDER; order >= 0; order--) { // include HUGE_ORDER
             unsigned int size = 1U << order;
-
-            // alignment requirement for buddy blocks
             if ((i & (size - 1)) != 0) continue;
-
-            if (is_block_free_normal(i, (unsigned int)order)) {
-                break;
-            }
+            if (is_block_free_normal(i, (unsigned int)order)) break;
         }
 
-        if (order < 0) {
-            // should not happen, but safe fallback
-            i++;
-            continue;
-        }
+        if (order < 0) { i++; continue; }
 
-        // add this block head to its order list
         AT[i].order = (unsigned int)order;
         at_list_add((unsigned int)order, i);
-
-        // skip past the block
         i += (1U << order);
     }
+
+    // ============================
+    // FALLBACK: Seed normal zone if empty
+    // ============================
+    int normal_empty = 1;
+    for (j = 0; j < HUGE_ORDER; j++) {
+        if (get_free_list_head(j) != -1) {
+            normal_empty = 0;
+            break;
+        }
+    }
+
+    if (normal_empty) {
+        int base = get_free_list_head(HUGE_ORDER);
+        if (base != -1) {
+            at_list_remove(HUGE_ORDER, (unsigned int)base);
+
+            unsigned int current_order = HUGE_ORDER;
+            while (current_order > 0) {
+                current_order--;
+                unsigned int buddy = (unsigned int)base + (1U << current_order);
+                AT[buddy].order = current_order;
+                at_list_add(current_order, buddy);
+            }
+
+            AT[base].order = 0;
+            at_list_add(0, (unsigned int)base);
+        }
+    }
 }
+
+
+
