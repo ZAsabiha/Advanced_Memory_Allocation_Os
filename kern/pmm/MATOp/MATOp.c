@@ -161,4 +161,3 @@ int is_superpage_aligned(unsigned int pindex) {
     return (pindex & (pages - 1)) == 0;
 }
 
-

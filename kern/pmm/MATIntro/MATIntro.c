@@ -24,13 +24,7 @@ unsigned int get_nps(void) {
     return NUM_PAGES;
 }
 
-// Getter function for the buddy order of a page.
-unsigned int at_get_order(unsigned int page_index) {
-    if (page_index < NUM_PAGES) {
-        return AT[page_index].order;
-    }
-    return 0; // Default to order 0 (4KB) if out of bounds
-}
+
 // Setter function for NUM_PAGES.
 void set_nps(unsigned int nps) {
     NUM_PAGES = nps;
@@ -69,6 +63,21 @@ void at_set_allocated(unsigned int page_index, unsigned int allocated) {
 int get_free_list_head(unsigned int order) {
     if (order >= MAX_ORDER) return -1;
     return free_list[order];
+}
+
+unsigned int at_get_next(unsigned int page_index) {
+    return AT[page_index].next;
+}
+
+unsigned int at_get_prev(unsigned int page_index) {
+    return AT[page_index].prev;
+}
+
+unsigned int at_get_order(unsigned int page_index) {
+    if (page_index < NUM_PAGES) {
+        return AT[page_index].order;
+    }
+    return -1; // Invalid page index
 }
 
 // Add a page to the free list at the specified order.
