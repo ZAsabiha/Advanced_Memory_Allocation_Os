@@ -9,8 +9,9 @@
 </div>
 
 <div>
+  <h2>Features</h2>
+  <img width="250" align="right" src="https://github.com/user-attachments/assets/ccd521d0-6e04-4518-9d74-d3f85cdacfe7" />
   <div align="left">
-    <h2>Features</h2>
 <ul>
   <li>Buddy Allocation System (2<sup>n</sup> blocks)</li>
   <li>Free List-based memory management</li>
@@ -21,13 +22,11 @@
   <li>Efficient Allocation Table (AT[]) for metadata</li>
 </ul>
   </div>
-      <div align="right">
-    <img width="250" src="https://github.com/user-attachments/assets/ccd521d0-6e04-4518-9d74-d3f85cdacfe7" />
-  </div>
 </div>
 
 
 <h2>Key Concepts Used</h2>
+<img width="250" align="right" alt="ai_shigoto" src="https://github.com/user-attachments/assets/22755402-ab0b-444d-bb47-c700c67d0afb" />
 <table border="1" cellspacing="0" cellpadding="8">
   <tr>
     <th>#</th>
@@ -43,35 +42,28 @@
   </tr>
   <tr>
     <td>3</td>
-    <td>Two-Level Paging</td>
-  </tr>
-  <tr>
-    <td>4</td>
     <td>Translation Lookaside Buffer (TLB)</td>
   </tr>
   <tr>
-    <td>5</td>
+    <td>4</td>
     <td>Page Size Extension (PSE)</td>
   </tr>
   <tr>
-    <td>6</td>
+    <td>5</td>
     <td>System Calls (<code>brk</code>)</td>
   </tr>
   <tr>
-    <td>7</td>
+    <td>6</td>
     <td>Contiguous Memory Allocation</td>
-  </tr>
-  <tr>
-    <td>8</td>
-    <td>Fragmentation Management</td>
   </tr>
 </table>
 
 
 <div>
-  <div align="right">
-  <h2>Technologies &amp; Tools</h2>
+  <h2 align="right">Technologies &amp; Tools</h2>
+  <img width="300" align="left" alt="computer11_sleep" src="https://github.com/user-attachments/assets/dfb8e1c3-38fe-455d-ac46-71789ddad1f6" />
 
+<div align="right">
   <table border="1" cellspacing="0" cellpadding="8">
     <tr>
       <th>Category</th>
@@ -101,14 +93,78 @@
     </tr>
   </table>
 </div>
-  <div align="left">
-    <img width="250" src="https://github.com/user-attachments/assets/1b88d47a-37ee-4acf-9d03-d5adb3bcfedc" />
-  </div>
 </div>
 
 
 <h2 align="center">System Architecture</h2>
-<img width="300" align="center" alt="OS Flowchart" src="https://github.com/user-attachments/assets/bed9d458-3156-4f4b-8a75-73fd950c6aba" />
+<div align="center">
+  <img width="250" style="border: 10px solid #000000" alt="OS Flowchart" src="https://github.com/user-attachments/assets/bed9d458-3156-4f4b-8a75-73fd950c6aba" />
+</div>
+
+
+
+<h2>How to run</h2>
+
+clone the repository :
+
+<pre>
+<code>
+git clone https://github.com/ZAsabiha/Advanced_Memory_Allocation_Os.git
+cd &lt;project-folder&gt;
+</code>
+</pre>
+
+open in vscode/terminal in a virtual machine. then run these commands:
+
+<pre>
+<code>
+make clean
+make TEST=1
+</code>
+</pre>
+
+This will:
+<ul>
+  <li>Compile the kernel</li>
+  <li>Launch the OS using QEMU</li>
+  <li>Enable the test cases</li>
+</ul>
+
+<h2>Team Members</h2>
+
+<table border="1" cellspacing="0" cellpadding="10">
+  <tr>
+    <th>Team Member</th>
+    <th>Contribution</th>
+  </tr>
+
+  <tr>
+    <td>Israt Risha Ivey</td>
+    <td>Superpage allocation in physical layer and page accessing from virtual address</td>
+  </tr>
+
+  <tr>
+    <td>Ramisa Anan Rahman</td>
+    <td>brk syscall and heap management</td>
+  </tr>
+
+  <tr>
+    <td>Ridika Naznin</td>
+    <td>Page alignment and user process space allocation</td>
+  </tr>
+
+  <tr>
+    <td>Zannatul Adon Sabiha</td>
+    <td>Free list, buddy allocation system, page allocation and deallocation in physical layer virtual layer</td>
+  </tr>
+
+  <tr>
+    <td>Jarin Subha Sneha</td>
+    <td>Superpage allocation in physical layer, TLB monitoring</td>
+  </tr>
+</table>
+
+
 
 
 
