@@ -34,12 +34,12 @@ test_MATOp();
     /* 2. Container Tests */
 container_init((unsigned int)mbi_addr);
 test_MContainer();
-    /* Run MPTOp BEFORE paging_init */
+    /* 3. Run MPTOp BEFORE paging_init */
 dprintf("\nTesting MPTOp layer...\n");
 if (test_MPTOp() == 0) {
 dprintf("MPTOp tests passed!\n");
     }
-    /* 5. TLB Performance Tests */
+    /* 4. TLB Performance Tests */
 dprintf("\n=== Starting TLB Performance Tests ===\n");
 tlb_monitor_init();
 if (test_TLBMonitor() == 0) {
@@ -47,10 +47,10 @@ dprintf("TLB tests passed!\n");
     } else {
 dprintf("TLB tests failed!\n");
     }
-    /* 3. Virtual Memory & Superpage Tests */
+    /* 5. Virtual Memory & Superpage Tests */
 paging_init(mbi_addr); 
 heap_init();
-    /* 4. Heap Growth & Shrink Tests */
+    /* 6. Heap Growth & Shrink Tests */
 dprintf("\nStarting Heap Growth & Shrink Tests...\n");
 if (test_heap() == 0) {
 dprintf("Heap tests passed!\n");
